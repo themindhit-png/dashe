@@ -1,37 +1,319 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Моё видео</title>
-  <style>
-    /* Убираем отступы и делаем видео фоном на весь экран */
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      overflow: hidden;
-    }
-    video {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover; /* Растягивает видео, сохраняя пропорции, обрезая лишнее */
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Поймай кнопку 😈</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #1a1a2e;
+            font-family: 'Arial', sans-serif;
+            touch-action: manipulation;
+            /* Отключаем выделение и контекстное меню для кнопок */
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Игровой экран */
+        .game-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+            background: radial-gradient(circle at center, #16213e, #0f3460);
+            transition: opacity 0.5s ease;
+        }
+
+        .game-container.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Сообщение-подсказка */
+        .message {
+            color: white;
+            font-size: clamp(20px, 5vw, 28px);
+            margin-bottom: 30px;
+            text-align: center;
+            padding: 0 20px;
+            font-weight: bold;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            min-height: 40px;
+            transition: all 0.3s;
+        }
+
+        /* Базовый стиль кнопок */
+        .btn {
+            padding: 18px 40px;
+            font-size: clamp(18px, 4vw, 24px);
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            color: white;
+            background: #e94560;
+            box-shadow: 0 10px 25px rgba(233, 69, 96, 0.4);
+            transition: transform 0.1s, opacity 0.4s, top 0.08s, left 0.08s;
+            text-align: center;
+            white-space: nowrap;
+            letter-spacing: 1px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            position: relative;
+        }
+
+        .btn:active {
+            transform: scale(0.93);
+        }
+
+        .btn.hidden {
+            display: none;
+        }
+
+        /* Кнопка 2-го этапа — закреплена в правом верхнем углу */
+        #step2btn {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            font-size: 20px;
+            padding: 15px 30px;
+            background: #f39c12;
+            box-shadow: 0 8px 20px rgba(243, 156, 18, 0.5);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%,
+            100% {
+                box-shadow: 0 8px 20px rgba(243, 156, 18, 0.5);
+            }
+            50% {
+                box-shadow: 0 8px 35px rgba(243, 156, 18, 0.9);
+            }
+        }
+
+        /* Кнопка-беглец */
+        #runawayBtn {
+            position: absolute;
+            /* изначально по центру, будет менять top/left */
+            background: #e74c3c;
+            box-shadow: 0 10px 25px rgba(231, 76, 60, 0.5);
+            font-size: 22px;
+            padding: 20px 35px;
+            z-index: 200;
+            transition: top 0.07s ease-out, left 0.07s ease-out, background 0.3s;
+            animation: shake 0.5s infinite;
+        }
+
+        @keyframes shake {
+            0%,
+            100% {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+            25% {
+                transform: translate(-50%, -50%) rotate(1.5deg);
+            }
+            75% {
+                transform: translate(-50%, -50%) rotate(-1.5deg);
+            }
+        }
+
+        #runawayBtn.caught {
+            animation: none;
+            background: #27ae60 !important;
+            box-shadow: 0 10px 30px rgba(39, 174, 96, 0.7);
+            transition: top 0.2s, left 0.2s, background 0.3s;
+        }
+
+        /* Видео-контейнер */
+        .video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            background: black;
+        }
+
+        .video-container.hidden {
+            display: none;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
 </head>
 <body>
-  <!-- 
-    autoplay — автовоспроизведение
-    muted — обязательно для автозапуска в браузерах (Chrome, Safari)
-    loop — зациклить видео
-    playsinline — чтобы не уходило в полноэкранный плеер на iPhone
-  -->
-  <video autoplay muted loop playsinline>
-    <source src="v1c044g50000d8a3cfvog65s7edv2t7g.mov" type="video/mp4">
-    Ваш браузер не поддерживает видео.
-  </video>
+    <!-- Игровой интерфейс -->
+    <div class="game-container" id="gameContainer">
+        <div class="message" id="message">Готов? Жми кнопку! 👇</div>
+        <button class="btn" id="step1btn">НАЖИМАЮ</button>
+        <button class="btn hidden" id="step2btn">Теперь тут 👈</button>
+        <button class="btn hidden" id="runawayBtn">Последний раз 😏</button>
+    </div>
+
+    <!-- Видео (изначально скрыто) -->
+    <div class="video-container hidden" id="videoContainer">
+        <video autoplay muted loop playsinline>
+            <source src="v1c044g50000d8a3cfvog65s7edv2t7g.mov" type="video/mp4">
+            Ваш браузер не поддерживает видео.
+        </video>
+    </div>
+
+    <script>
+        (function() {
+            // Элементы
+            const gameContainer = document.getElementById('gameContainer');
+            const videoContainer = document.getElementById('videoContainer');
+            const messageEl = document.getElementById('message');
+            const step1btn = document.getElementById('step1btn');
+            const step2btn = document.getElementById('step2btn');
+            const runawayBtn = document.getElementById('runawayBtn');
+            const video = videoContainer.querySelector('video');
+
+            // Состояние убегающей кнопки
+            let runawayCount = 0;
+            const maxRunaway = 7; // Сколько раз кнопка убежит перед тем, как сдаться
+            let canCatch = false; // Флаг: можно ли поймать кнопку
+
+            // ============ ЭТАП 1: первая кнопка ============
+            step1btn.addEventListener('click', () => {
+                step1btn.classList.add('hidden');
+                step2btn.classList.remove('hidden');
+                messageEl.textContent = 'А теперь нажми там, в углу! ↗️';
+            });
+
+            // ============ ЭТАП 2: кнопка в углу ============
+            step2btn.addEventListener('click', () => {
+                step2btn.classList.add('hidden');
+                runawayBtn.classList.remove('hidden');
+                messageEl.textContent = 'Поймай кнопку! 😈 (убегает от пальца)';
+
+                // Ставим кнопку в центр
+                positionInCenter();
+                runawayCount = 0;
+                canCatch = false;
+                runawayBtn.textContent = 'Последний раз 😏';
+                runawayBtn.classList.remove('caught');
+
+                // Навешиваем обработчики убегания
+                runawayBtn.addEventListener('mouseenter', moveRunaway);
+                runawayBtn.addEventListener('touchstart', handleTouch, { passive: false });
+            });
+
+            // Позиционирование по центру экрана
+            function positionInCenter() {
+                runawayBtn.style.top = '50%';
+                runawayBtn.style.left = '50%';
+                runawayBtn.style.transform = 'translate(-50%, -50%)';
+            }
+
+            // Генерация случайной позиции в пределах экрана (с учётом размеров кнопки)
+            function getRandomPos() {
+                const btnWidth = runawayBtn.offsetWidth || 180; // фолбэк, если размер ещё не вычислен
+                const btnHeight = runawayBtn.offsetHeight || 60;
+                const maxX = Math.max(0, window.innerWidth - btnWidth);
+                const maxY = Math.max(0, window.innerHeight - btnHeight);
+                const x = Math.random() * maxX;
+                const y = Math.random() * maxY;
+                return { x, y };
+            }
+
+            // Перемещение кнопки-беглеца
+            function moveRunaway(e) {
+                if (canCatch) return; // Уже сдалась — не убегаем
+
+                runawayCount++;
+
+                if (runawayCount >= maxRunaway) {
+                    // Кнопка сдаётся
+                    canCatch = true;
+                    runawayBtn.textContent = 'Ладно, жми! 😤';
+                    runawayBtn.classList.add('caught');
+                    // Снимаем обработчики убегания
+                    runawayBtn.removeEventListener('mouseenter', moveRunaway);
+                    runawayBtn.removeEventListener('touchstart', handleTouch);
+                    // Плавно возвращаем в центр
+                    positionInCenter();
+                    messageEl.textContent = 'Всё, твоя взяла! Жми скорее! 🎉';
+                    return;
+                }
+
+                // Перемещаем в случайное место
+                const { x, y } = getRandomPos();
+                runawayBtn.style.top = y + 'px';
+                runawayBtn.style.left = x + 'px';
+                runawayBtn.style.transform = 'none'; // убираем центрирование
+                messageEl.textContent = `Попыток: ${runawayCount}/${maxRunaway} 😜`;
+            }
+
+            // Обработчик касания на мобильном
+            function handleTouch(e) {
+                if (canCatch) return;
+                e.preventDefault(); // Блокируем генерацию click после касания
+                moveRunaway();
+            }
+
+            // Клик по кнопке-беглецу (сработает, только когда canCatch === true)
+            runawayBtn.addEventListener('click', (e) => {
+                if (!canCatch) {
+                    e.preventDefault();
+                    return;
+                }
+                // Показываем видео
+                showVideo();
+            });
+
+            // Показ видео
+            function showVideo() {
+                gameContainer.classList.add('hidden');
+                videoContainer.classList.remove('hidden');
+                // Гарантированно запускаем видео
+                video.play().catch(() => {
+                    // На случай, если браузер блокирует автовоспроизведение без звука
+                    video.muted = true;
+                    video.play();
+                });
+            }
+
+            // Дополнительно: при ресайзе окна на десктопе убегающая кнопка не должна выходить за границы
+            window.addEventListener('resize', () => {
+                if (!canCatch && runawayBtn.classList.contains('hidden') === false && runawayCount > 0) {
+                    // Если кнопка уже перемещалась, корректируем позицию, чтобы не вылезла
+                    const btnRect = runawayBtn.getBoundingClientRect();
+                    const btnWidth = btnRect.width;
+                    const btnHeight = btnRect.height;
+                    let top = parseFloat(runawayBtn.style.top) || (window.innerHeight / 2);
+                    let left = parseFloat(runawayBtn.style.left) || (window.innerWidth / 2);
+                    const maxX = Math.max(0, window.innerWidth - btnWidth);
+                    const maxY = Math.max(0, window.innerHeight - btnHeight);
+                    top = Math.min(Math.max(top, 0), maxY);
+                    left = Math.min(Math.max(left, 0), maxX);
+                    runawayBtn.style.top = top + 'px';
+                    runawayBtn.style.left = left + 'px';
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
