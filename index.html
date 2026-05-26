@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Поймай кнопку</title>
+    <title>Не нажимай</title>
     <style>
         * {
             margin: 0;
@@ -21,17 +21,19 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Игровой слой – перекрывает всё */
+        /* Игровой слой */
         #gameLayer {
             position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             z-index: 999;
+            background: radial-gradient(circle at center, #16213e, #0f3460);
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            background: radial-gradient(circle at center, #16213e, #0f3460);
             transition: opacity 0.5s;
         }
         #gameLayer.hidden {
@@ -41,17 +43,17 @@
 
         #message {
             color: white;
-            font-size: 22px;
-            margin-bottom: 30px;
+            font-size: 24px;
+            margin-bottom: 40px;
             text-align: center;
             font-weight: bold;
-            padding: 0 20px;
-            min-height: 50px;
+            padding: 0 30px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
         }
 
         .btn {
             padding: 18px 40px;
-            font-size: 20px;
+            font-size: 22px;
             font-weight: bold;
             border: none;
             border-radius: 50px;
@@ -68,36 +70,37 @@
         .btn:active { transform: scale(0.93); }
         .btn.hidden { display: none; }
 
-        /* Кнопка в правом верхнем углу */
+        /* Вторая кнопка – абсолютно внутри gameLayer */
         #step2btn {
-            position: fixed;
+            position: absolute;
             top: 20px;
             right: 20px;
             background: #f39c12;
             box-shadow: 0 8px 20px rgba(243,156,18,0.5);
-            z-index: 1000;
         }
 
-        /* Убегающая кнопка */
+        /* Третья кнопка-беглец */
         #runawayBtn {
             position: absolute;
             background: #e74c3c;
             font-size: 20px;
             padding: 18px 35px;
             z-index: 1001;
-            transition: top 0.08s ease-out, left 0.08s ease-out;
             box-shadow: 0 10px 25px rgba(231,76,60,0.5);
+            transition: top 0.08s ease-out, left 0.08s ease-out;
         }
         #runawayBtn.caught {
             background: #27ae60 !important;
             box-shadow: 0 10px 25px rgba(39,174,96,0.7);
         }
 
-        /* Видео-контейнер – скрыт по умолчанию */
+        /* Видео */
         #videoContainer {
             position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             z-index: 1;
             background: black;
         }
@@ -110,15 +113,13 @@
     </style>
 </head>
 <body>
-    <!-- ИГРОВОЙ ИНТЕРФЕЙС -->
     <div id="gameLayer">
         <div id="message">Готов? Жми кнопку! 👇</div>
         <button class="btn" id="step1btn">НАЖИМАЮ</button>
-        <button class="btn hidden" id="step2btn">Теперь тут 👈</button>
-        <button class="btn hidden" id="runawayBtn">Последний раз 😏</button>
+        <button class="btn hidden" id="step2btn">Теперь тут</button>
+        <button class="btn hidden" id="runawayBtn">Последний раз</button>
     </div>
 
-    <!-- ВИДЕО (скрыто) -->
     <div id="videoContainer" class="hidden">
         <video autoplay muted loop playsinline>
             <source src="v1c044g50000d8a3cfvog65s7edv2t7g.mov" type="video/mp4">
@@ -128,7 +129,6 @@
 
     <script>
         (function() {
-            // Элементы
             const gameLayer = document.getElementById('gameLayer');
             const videoContainer = document.getElementById('videoContainer');
             const message = document.getElementById('message');
@@ -137,13 +137,10 @@
             const runawayBtn = document.getElementById('runawayBtn');
             const video = document.querySelector('video');
 
-            // Переменные для убегания
             let runawayCount = 0;
-            const maxRunaway = 6; // сколько раз убежит
+            const maxRunaway = 7; // сколько раз убежит, прежде чем сдаться
             let canCatch = false;
-            let runawayTimer = null;
 
-            // Функция показа видео
             function showVideo() {
                 gameLayer.classList.add('hidden');
                 videoContainer.classList.remove('hidden');
@@ -153,74 +150,71 @@
                 });
             }
 
-            // Этап 1: первая кнопка
-            step1btn.addEventListener('click', function() {
+            // Этап 1
+            step1btn.addEventListener('click', () => {
                 step1btn.classList.add('hidden');
                 step2btn.classList.remove('hidden');
-                message.textContent = 'Теперь нажми в правом верхнем углу! ↗️';
+                message.textContent = 'Теперь нажми там'; // коротко, без подсказок про убегание
             });
 
-            // Этап 2: кнопка в углу
-            step2btn.addEventListener('click', function() {
+            // Этап 2
+            step2btn.addEventListener('click', () => {
                 step2btn.classList.add('hidden');
                 runawayBtn.classList.remove('hidden');
-                message.textContent = 'Поймай кнопку! 😈 (убегает от пальца)';
-                // Позиционируем по центру
-                placeAtCenter();
+                message.textContent = ''; // убираем сообщение, чтобы не палиться
+                // размещаем по центру
+                runawayBtn.style.top = '50%';
+                runawayBtn.style.left = '50%';
+                runawayBtn.style.transform = 'translate(-50%, -50%)';
                 runawayCount = 0;
                 canCatch = false;
                 runawayBtn.classList.remove('caught');
-                runawayBtn.textContent = 'Последний раз 😏';
-                // Вешаем обработчик "убегания" – срабатывает при наведении или касании
-                runawayBtn.addEventListener('pointerenter', moveRunaway);
-                // Для мобильных: предотвращаем срабатывание click, пока кнопка убегает
+                runawayBtn.textContent = 'Последний раз';
+
+                // обработчики убегания
+                runawayBtn.addEventListener('pointerenter', runAway);
                 runawayBtn.addEventListener('touchstart', function(e) {
                     if (!canCatch) {
-                        e.preventDefault(); // не даём сработать click
-                        moveRunaway();
+                        e.preventDefault();
+                        runAway();
                     }
                 }, { passive: false });
             });
 
-            function placeAtCenter() {
-                runawayBtn.style.top = '50%';
-                runawayBtn.style.left = '50%';
-                runawayBtn.style.transform = 'translate(-50%, -50%)';
-            }
-
-            // Получить случайные координаты, чтобы кнопка не вылезала за экран
             function getRandomCoords() {
                 const btnWidth = runawayBtn.offsetWidth || 180;
                 const btnHeight = runawayBtn.offsetHeight || 55;
                 const maxX = window.innerWidth - btnWidth;
                 const maxY = window.innerHeight - btnHeight;
-                const x = Math.random() * maxX;
-                const y = Math.random() * maxY;
-                return { x: Math.max(0, x), y: Math.max(0, y) };
+                return {
+                    x: Math.max(0, Math.random() * maxX),
+                    y: Math.max(0, Math.random() * maxY)
+                };
             }
 
-            function moveRunaway() {
+            function runAway() {
                 if (canCatch) return;
                 runawayCount++;
                 if (runawayCount >= maxRunaway) {
-                    // Сдаётся
+                    // сдаётся
                     canCatch = true;
                     runawayBtn.classList.add('caught');
-                    runawayBtn.textContent = 'Ладно, жми! 😤';
-                    runawayBtn.removeEventListener('pointerenter', moveRunaway);
-                    placeAtCenter();
-                    message.textContent = 'Всё, твоя взяла! Жми скорее! 🎉';
+                    runawayBtn.textContent = 'Ну ладно, жми';
+                    runawayBtn.removeEventListener('pointerenter', runAway);
+                    // возвращаем в центр
+                    runawayBtn.style.top = '50%';
+                    runawayBtn.style.left = '50%';
+                    runawayBtn.style.transform = 'translate(-50%, -50%)';
                     return;
                 }
                 const { x, y } = getRandomCoords();
                 runawayBtn.style.top = y + 'px';
                 runawayBtn.style.left = x + 'px';
                 runawayBtn.style.transform = 'none';
-                message.textContent = `Убежала ${runawayCount}/${maxRunaway} раз 😜`;
             }
 
-            // Клик по убегающей кнопке – только когда canCatch === true
-            runawayBtn.addEventListener('click', function(e) {
+            // Клик по пойманной кнопке
+            runawayBtn.addEventListener('click', (e) => {
                 if (!canCatch) {
                     e.preventDefault();
                     return;
@@ -228,7 +222,7 @@
                 showVideo();
             });
 
-            // На случай ресайза – корректируем положение, если кнопка уже где-то
+            // Корректировка позиции при ресайзе
             window.addEventListener('resize', () => {
                 if (!canCatch && !runawayBtn.classList.contains('hidden') && runawayCount > 0) {
                     const rect = runawayBtn.getBoundingClientRect();
