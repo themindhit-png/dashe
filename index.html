@@ -21,13 +21,10 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Игровой слой */
         #gameLayer {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: 999;
             background: radial-gradient(circle at center, #16213e, #0f3460);
             display: flex;
@@ -70,7 +67,7 @@
         .btn:active { transform: scale(0.93); }
         .btn.hidden { display: none; }
 
-        /* Вторая кнопка – абсолютно внутри gameLayer */
+        /* Кнопка "Теперь тут" в правом верхнем углу */
         #step2btn {
             position: absolute;
             top: 20px;
@@ -79,7 +76,7 @@
             box-shadow: 0 8px 20px rgba(243,156,18,0.5);
         }
 
-        /* Третья кнопка-беглец */
+        /* Убегающая кнопка */
         #runawayBtn {
             position: absolute;
             background: #e74c3c;
@@ -94,13 +91,10 @@
             box-shadow: 0 10px 25px rgba(39,174,96,0.7);
         }
 
-        /* Видео */
         #videoContainer {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: 1;
             background: black;
         }
@@ -138,8 +132,9 @@
             const video = document.querySelector('video');
 
             let runawayCount = 0;
-            const maxRunaway = 7; // сколько раз убежит, прежде чем сдаться
+            const maxRunaway = 7;
             let canCatch = false;
+            let runawayHandler = null; // чтобы удалять обработчик
 
             function showVideo() {
                 gameLayer.classList.add('hidden');
@@ -150,68 +145,73 @@
                 });
             }
 
-            // Этап 1
-            step1btn.addEventListener('click', () => {
-                step1btn.classList.add('hidden');
-                step2btn.classList.remove('hidden');
-                message.textContent = 'Теперь нажми там'; // коротко, без подсказок про убегание
-            });
-
-            // Этап 2
-            step2btn.addEventListener('click', () => {
-                step2btn.classList.add('hidden');
-                runawayBtn.classList.remove('hidden');
-                message.textContent = ''; // убираем сообщение, чтобы не палиться
-                // размещаем по центру
-                runawayBtn.style.top = '50%';
-                runawayBtn.style.left = '50%';
-                runawayBtn.style.transform = 'translate(-50%, -50%)';
-                runawayCount = 0;
-                canCatch = false;
-                runawayBtn.classList.remove('caught');
-                runawayBtn.textContent = 'Последний раз';
-
-                // обработчики убегания
-                runawayBtn.addEventListener('pointerenter', runAway);
-                runawayBtn.addEventListener('touchstart', function(e) {
-                    if (!canCatch) {
-                        e.preventDefault();
-                        runAway();
-                    }
-                }, { passive: false });
-            });
-
-            function getRandomCoords() {
-                const btnWidth = runawayBtn.offsetWidth || 180;
-                const btnHeight = runawayBtn.offsetHeight || 55;
-                const maxX = window.innerWidth - btnWidth;
-                const maxY = window.innerHeight - btnHeight;
-                return {
-                    x: Math.max(0, Math.random() * maxX),
-                    y: Math.max(0, Math.random() * maxY)
-                };
-            }
-
-            function runAway() {
+            // Функция убегания
+            function runAway(e) {
                 if (canCatch) return;
+                // предотвращаем клик на мобильных
+                if (e && e.type === 'touchstart') e.preventDefault();
+
                 runawayCount++;
                 if (runawayCount >= maxRunaway) {
                     // сдаётся
                     canCatch = true;
                     runawayBtn.classList.add('caught');
                     runawayBtn.textContent = 'Ну ладно, жми';
-                    runawayBtn.removeEventListener('pointerenter', runAway);
+                    if (runawayHandler) {
+                        runawayBtn.removeEventListener('mouseenter', runawayHandler);
+                        runawayBtn.removeEventListener('touchstart', runawayHandler);
+                    }
                     // возвращаем в центр
                     runawayBtn.style.top = '50%';
                     runawayBtn.style.left = '50%';
                     runawayBtn.style.transform = 'translate(-50%, -50%)';
                     return;
                 }
-                const { x, y } = getRandomCoords();
+
+                // случайная позиция
+                const btnWidth = runawayBtn.offsetWidth || 180;
+                const btnHeight = runawayBtn.offsetHeight || 55;
+                const maxX = window.innerWidth - btnWidth;
+                const maxY = window.innerHeight - btnHeight;
+                const x = Math.max(0, Math.random() * maxX);
+                const y = Math.max(0, Math.random() * maxY);
                 runawayBtn.style.top = y + 'px';
                 runawayBtn.style.left = x + 'px';
                 runawayBtn.style.transform = 'none';
             }
+
+            // Этап 1
+            step1btn.addEventListener('click', () => {
+                step1btn.classList.add('hidden');
+                step2btn.classList.remove('hidden');
+                message.textContent = 'Теперь нажми там';
+            });
+
+            // Этап 2
+            step2btn.addEventListener('click', () => {
+                step2btn.classList.add('hidden');
+                runawayBtn.classList.remove('hidden');
+                message.textContent = '';
+                // сброс
+                runawayCount = 0;
+                canCatch = false;
+                runawayBtn.classList.remove('caught');
+                runawayBtn.textContent = 'Последний раз';
+                // устанавливаем в центр
+                runawayBtn.style.top = '50%';
+                runawayBtn.style.left = '50%';
+                runawayBtn.style.transform = 'translate(-50%, -50%)';
+
+                // удаляем старый обработчик, если был
+                if (runawayHandler) {
+                    runawayBtn.removeEventListener('mouseenter', runawayHandler);
+                    runawayBtn.removeEventListener('touchstart', runawayHandler);
+                }
+                // создаём новый обработчик
+                runawayHandler = runAway;
+                runawayBtn.addEventListener('mouseenter', runawayHandler);
+                runawayBtn.addEventListener('touchstart', runawayHandler, { passive: false });
+            });
 
             // Клик по пойманной кнопке
             runawayBtn.addEventListener('click', (e) => {
