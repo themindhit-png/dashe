@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Моё видео</title>
+  <style>
+    /* Убираем отступы и делаем видео фоном на весь экран */
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+    video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* Растягивает видео, сохраняя пропорции, обрезая лишнее */
+    }
+  </style>
+</head>
+<body>
+  <!-- 
+    autoplay — автовоспроизведение
+    muted — обязательно для автозапуска в браузерах (Chrome, Safari)
+    loop — зациклить видео
+    playsinline — чтобы не уходило в полноэкранный плеер на iPhone
+  -->
+  <video autoplay muted loop playsinline>
+    <source src="video.mp4" type="video/mp4">
+    Ваш браузер не поддерживает видео.
+  </video>
+</body>
+</html>
