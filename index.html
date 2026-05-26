@@ -76,7 +76,7 @@
             box-shadow: 0 8px 20px rgba(243,156,18,0.5);
         }
 
-        /* Убегающая кнопка */
+        /* Убегающая кнопка (никогда не меняет стиль) */
         #runawayBtn {
             position: absolute;
             background: #e74c3c;
@@ -85,10 +85,6 @@
             z-index: 1001;
             box-shadow: 0 10px 25px rgba(231,76,60,0.5);
             transition: top 0.08s ease-out, left 0.08s ease-out;
-        }
-        #runawayBtn.caught {
-            background: #27ae60 !important;
-            box-shadow: 0 10px 25px rgba(39,174,96,0.7);
         }
 
         #videoContainer {
@@ -132,13 +128,16 @@
             const video = document.querySelector('video');
 
             let runawayCount = 0;
-            const maxRunaway = 7;
+            const maxRunaway = 13; // теперь 13 убеганий
             let canCatch = false;
-            let runawayHandler = null; // чтобы удалять обработчик
+            let runawayHandler = null;
 
             function showVideo() {
                 gameLayer.classList.add('hidden');
                 videoContainer.classList.remove('hidden');
+                // Запускаем видео с самого начала
+                video.pause();
+                video.currentTime = 0;
                 video.play().catch(() => {
                     video.muted = true;
                     video.play();
@@ -148,27 +147,22 @@
             // Функция убегания
             function runAway(e) {
                 if (canCatch) return;
-                // предотвращаем клик на мобильных
+                // предотвращаем клик на мобильных, пока кнопка убегает
                 if (e && e.type === 'touchstart') e.preventDefault();
 
                 runawayCount++;
                 if (runawayCount >= maxRunaway) {
-                    // сдаётся
+                    // Кнопка перестаёт убегать, но внешне не меняется
                     canCatch = true;
-                    runawayBtn.classList.add('caught');
-                    runawayBtn.textContent = 'Ну ладно, жми';
                     if (runawayHandler) {
                         runawayBtn.removeEventListener('mouseenter', runawayHandler);
                         runawayBtn.removeEventListener('touchstart', runawayHandler);
                     }
-                    // возвращаем в центр
-                    runawayBtn.style.top = '50%';
-                    runawayBtn.style.left = '50%';
-                    runawayBtn.style.transform = 'translate(-50%, -50%)';
+                    // Оставляем кнопку на месте (она будет на последней позиции)
                     return;
                 }
 
-                // случайная позиция
+                // Случайная позиция
                 const btnWidth = runawayBtn.offsetWidth || 180;
                 const btnHeight = runawayBtn.offsetHeight || 55;
                 const maxX = window.innerWidth - btnWidth;
@@ -191,29 +185,26 @@
             step2btn.addEventListener('click', () => {
                 step2btn.classList.add('hidden');
                 runawayBtn.classList.remove('hidden');
-                message.textContent = '';
-                // сброс
+                message.textContent = ''; // никаких подсказок
+                // Сброс
                 runawayCount = 0;
                 canCatch = false;
-                runawayBtn.classList.remove('caught');
-                runawayBtn.textContent = 'Последний раз';
-                // устанавливаем в центр
+                // Устанавливаем в центр
                 runawayBtn.style.top = '50%';
                 runawayBtn.style.left = '50%';
                 runawayBtn.style.transform = 'translate(-50%, -50%)';
 
-                // удаляем старый обработчик, если был
+                // Удаляем старый обработчик
                 if (runawayHandler) {
                     runawayBtn.removeEventListener('mouseenter', runawayHandler);
                     runawayBtn.removeEventListener('touchstart', runawayHandler);
                 }
-                // создаём новый обработчик
                 runawayHandler = runAway;
                 runawayBtn.addEventListener('mouseenter', runawayHandler);
                 runawayBtn.addEventListener('touchstart', runawayHandler, { passive: false });
             });
 
-            // Клик по пойманной кнопке
+            // Клик по кнопке-беглецу (сработает только когда canCatch === true)
             runawayBtn.addEventListener('click', (e) => {
                 if (!canCatch) {
                     e.preventDefault();
